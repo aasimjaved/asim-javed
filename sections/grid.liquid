@@ -1,0 +1,283 @@
+{% schema %} 
+{
+  "name": "Custom Product Grid",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product_1",
+      "label": "Select Product 1"
+    },
+    {
+      "type": "product",
+      "id": "product_2",
+      "label": "Select Product 2"
+    },
+    {
+      "type": "product",
+      "id": "product_3",
+      "label": "Select Product 3"
+    },
+    {
+      "type": "product",
+      "id": "product_4",
+      "label": "Select Product 4"
+    },
+    {
+      "type": "product",
+      "id": "product_5",
+      "label": "Select Product 5"
+    },
+    {
+      "type": "product",
+      "id": "product_6",
+      "label": "Select Product 6"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Product Grid"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="custom-product-grid">
+  <div class="grid">
+    {% for i in (1..6) %}
+      {% assign product_id = "product_" | append: i %}
+      {% assign product = all_products[section.settings[product_id]] %}
+      
+      {% if product != blank %}
+        <div class="product-card">
+          <div class="image-wrapper">
+            <img src="{{ product.featured_image | img_url: 'large' }}" alt="{{ product.title }}">
+            <button class="plus-button open-popup" data-handle="{{ product.handle }}">+</button>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Popup Modal -->
+<!-- Updated Popup Modal -->
+<div id="product-popup" class="popup-overlay">
+  <div class="popup-content">
+    <span class="close-popup">&times;</span>
+    <div class="popup-container">
+      <div class="popup-image" id="popup-image"></div>
+      <div class="popup-details" id="popup-details"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .custom-product-grid {
+    padding: 20px;
+}
+.custom-product-grid .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, auto);
+    gap: 20px;
+}
+
+/* Product Card */
+.product-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    cursor: pointer;
+}
+.image-wrapper {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+.product-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Plus Button */
+.plus-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #e60023;
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    transition: background 0.3s;
+}
+.plus-button:hover {
+    background: #c1001f;
+}
+
+  /* Updated Popup Styles */
+  
+  .popup-overlay {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    background: white;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 1000;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+
+  .popup-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .popup-image img {
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .popup-details h2 {
+    font-size: 18px;
+    margin: 10px 0;
+  }
+
+  .popup-details p {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 10px;
+  }
+
+  .color-options {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .color-option {
+    border: 1px solid black;
+    padding: 5px 15px;
+    cursor: pointer;
+  }
+
+  .size-select {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+  }
+
+  .quantity-selector {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid #ccc;
+    padding: 5px;
+    margin-bottom: 10px;
+  }
+
+  .quantity-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .add-to-cart-btn {
+    background-color: black;
+    color: white;
+    padding: 10px;
+    width: 100%;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 5px;
+  }
+
+  .close-popup {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    color: #333;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const popup = document.getElementById("product-popup");
+    const popupImage = document.getElementById("popup-image");
+    const popupDetails = document.getElementById("popup-details");
+    const closePopup = document.querySelector(".close-popup");
+
+    document.querySelectorAll(".open-popup").forEach(button => {
+      button.addEventListener("click", function (e) {
+        e.preventDefault();
+        const handle = this.dataset.handle;
+
+        fetch(`/products/${handle}.json`)
+          .then(response => response.json())
+          .then(data => {
+            const product = data.product;
+            let colorOptions = "";
+            let sizeOptions = "<select class='size-select'><option>Choose your size</option>";
+            let quantitySelector = "";
+
+            product.options.forEach(option => {
+              if (option.name.toLowerCase() === "color") {
+                option.values.forEach(value => {
+                  colorOptions += `<div class='color-option'>${value}</div>`;
+                });
+              }
+              if (option.name.toLowerCase() === "size") {
+                option.values.forEach(value => {
+                  sizeOptions += `<option>${value}</option>`;
+                });
+              }
+            });
+            sizeOptions += "</select>";
+
+            quantitySelector = `
+              <div class='quantity-selector'>
+                <button class='quantity-btn' id='decrease-qty'>-</button>
+                <span id='quantity'>1</span>
+                <button class='quantity-btn' id='increase-qty'>+</button>
+              </div>
+            `;
+
+            popupImage.innerHTML = `<img src="${product.images[0].src}" alt="${product.title}" />`;
+            popupDetails.innerHTML = `
+              <h2>${product.title}</h2>
+              <p>${product.body_html}</p>
+              <div class='color-options'>${colorOptions}</div>
+              ${sizeOptions}
+              ${quantitySelector}
+              <button class='add-to-cart-btn'>ADD TO CART →</button>
+            `;
+            popup.style.display = "block";
+          });
+      });
+    });
+
+    closePopup.addEventListener("click", function () {
+      popup.style.display = "none";
+    });
+  });
+</script>
